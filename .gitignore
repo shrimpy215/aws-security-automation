@@ -1,0 +1,45 @@
+# ---- Terraform ----
+# Provider binaries and modules — hundreds of MB, re-downloadable via `terraform init`
+.terraform/
+.terraform.lock.hcl
+
+# State files. These contain resource IDs, ARNs, and potentially secrets.
+# Never commit state to a public repo.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Saved plan files — binary, and they embed the full state
+*.tfplan
+plan.out
+
+# Variable files. tfvars can hold account IDs, emails, and other specifics.
+# We commit terraform.tfvars.example instead.
+*.tfvars
+!*.tfvars.example
+
+# Crash logs
+crash.log
+crash.*.log
+
+# ---- Lambda build artifacts ----
+# Terraform's archive_file provider zips the source at plan time.
+# The zips are build output, not source.
+*.zip
+lambda/**/__pycache__/
+lambda/**/*.pyc
+
+# ---- Python tooling ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# ---- macOS ----
+.DS_Store
+
+# ---- Editor ----
+.vscode/
+*.swp
