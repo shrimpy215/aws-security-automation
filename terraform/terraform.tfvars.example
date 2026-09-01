@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and adjust.
+# terraform.tfvars is gitignored; this .example file is committed so anyone
+# cloning the repo knows what inputs exist.
+
+aws_region   = "us-east-1"
+project_name = "secops"
+environment  = "portfolio"
+
+# Set to false to skip AWS Config and save a few cents, at the cost of
+# Security Hub controls reporting "No data".
+enable_aws_config = true
