@@ -31,3 +31,39 @@ variable "alert_email" {
   EOT
   type        = string
 }
+variable "min_severity" {
+  description = <<-EOT
+    Minimum normalized severity (0-100) that triggers an alert.
+
+    ASFF scale: 0 INFORMATIONAL, 1-39 LOW, 40-69 MEDIUM,
+    70-89 HIGH, 90-100 CRITICAL.
+
+    Default 40 alerts on MEDIUM and above. Anything below is recorded in
+    the logs but not emailed.
+  EOT
+  type        = number
+  default     = 40
+
+  validation {
+    condition     = var.min_severity >= 0 && var.min_severity <= 100
+    error_message = "min_severity must be between 0 and 100."
+  }
+}
+
+variable "dedupe_ttl_hours" {
+  description = "Hours a finding fingerprint suppresses repeat alerts before the window reopens."
+  type        = number
+  default     = 24
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention. Without this, log groups keep data forever and bill forever."
+  type        = number
+  default     = 14
+}
+
+variable "log_level" {
+  description = "Python logging level for the Lambda functions."
+  type        = string
+  default     = "INFO"
+}

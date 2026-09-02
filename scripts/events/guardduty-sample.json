@@ -1,0 +1,31 @@
+{
+  "version": "0",
+  "id": "test-event-0001",
+  "detail-type": "GuardDuty Finding",
+  "source": "aws.guardduty",
+  "account": "495759857853",
+  "time": "2026-09-02T12:00:00Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "schemaVersion": "2.0",
+    "accountId": "495759857853",
+    "region": "us-east-1",
+    "partition": "aws",
+    "id": "test-finding-0001",
+    "arn": "arn:aws:guardduty:us-east-1:495759857853:detector/test/finding/test-finding-0001",
+    "type": "UnauthorizedAccess:EC2/SSHBruteForce",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0123456789abcdef0",
+        "instanceType": "t3.micro"
+      }
+    },
+    "severity": 5,
+    "createdAt": "2026-09-02T12:00:00.000Z",
+    "updatedAt": "2026-09-02T12:00:00.000Z",
+    "title": "SSH brute force attacks against i-0123456789abcdef0",
+    "description": "EC2 instance i-0123456789abcdef0 is being probed for SSH weaknesses by 198.51.100.42."
+  }
+}
