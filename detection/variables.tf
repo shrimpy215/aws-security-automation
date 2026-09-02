@@ -36,3 +36,7 @@ variable "enable_aws_config" {
   type        = bool
   default     = true
 }
+variable "alert_email" {
+  description = "Email subscribed to the security alert SNS topic. Requires one-time manual confirmation via the link AWS sends."
+  type        = string
+}

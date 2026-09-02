@@ -9,3 +9,4 @@ environment  = "portfolio"
 # Set to false to skip AWS Config and save a few cents, at the cost of
 # Security Hub controls reporting "No data".
 enable_aws_config = true
+alert_email = "you@example.com"

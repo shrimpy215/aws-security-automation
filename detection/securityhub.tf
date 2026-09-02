@@ -31,9 +31,15 @@ resource "aws_securityhub_standards_subscription" "this" {
 
   standards_arn = each.value
 
-  # Project 2 lesson applied. standards_arn is a static string, so nothing
-  # in this resource REFERENCES aws_securityhub_account.main. Terraform's
-  # implicit dependency graph is built from data references only — without
-  # this, it may try to subscribe to a standard before Security Hub is on.
+  # The provider's default 3-minute create wait is shorter than first-time
+  # standards enablement in a fresh account. CIS v3.0.0 and FSBP together
+  # activate several hundred controls, which routinely exceeds it. The
+  # subscription is created successfully either way — only the readiness
+  # poll times out — but Terraform taints the resource, so every subsequent
+  # apply plans a needless replacement.
+  timeouts {
+    create = "30m"
+  }
+
   depends_on = [aws_securityhub_account.main]
 }
