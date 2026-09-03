@@ -1,0 +1,69 @@
+# Checkov configuration.
+#
+# Every skip below is a deliberate exception with a stated reason. A skip
+# without a justification is just a suppressed finding.
+
+skip-path:
+  - .venv
+  - .terraform
+
+skip-check:
+  # --- AWS Config S3 bucket -------------------------------------------------
+  # CKV_AWS_18  server access logging: logging a log bucket into another log
+  #             bucket doubles storage for a bucket destroyed with the project.
+  # CKV_AWS_144 cross-region replication: single-region by design (see
+  #             docs/decisions.md #1).
+  # CKV2_AWS_61 lifecycle configuration: force_destroy is set; the bucket does
+  #             not outlive the project.
+  # CKV2_AWS_62 event notifications: nothing consumes object events here.
+  - CKV_AWS_18
+  - CKV_AWS_144
+  - CKV2_AWS_61
+  - CKV2_AWS_62
+
+  # --- CloudWatch Logs ------------------------------------------------------
+  # CKV_AWS_158 CMK encryption on log groups: would require a key policy grant
+  #             to logs.amazonaws.com scoped to each log group ARN. Log groups
+  #             are encrypted at rest with AWS-managed keys by default, and the
+  #             sensitive content (finding detail) lives in DynamoDB and SNS,
+  #             both of which DO use the customer-managed key.
+  # CKV_AWS_338 one-year retention: 14 days is deliberate for a stack destroyed
+  #             nightly. The permanent record is the audit table, which has no
+  #             expiry at all.
+  - CKV_AWS_158
+  - CKV_AWS_338
+
+  # --- Lambda ---------------------------------------------------------------
+  # CKV_AWS_117 VPC placement: both functions call only AWS service APIs. A VPC
+  #             would require endpoints or a NAT gateway, adding cost and
+  #             failure modes for no security gain.
+  # CKV_AWS_173 CMK-encrypted environment variables: the variables hold table
+  #             names, ARNs and thresholds. No secrets are passed this way.
+  # CKV_AWS_272 code signing: no signing profile exists in this account.
+  - CKV_AWS_117
+  - CKV_AWS_173
+  - CKV_AWS_272
+
+  # --- IAM ------------------------------------------------------------------
+  # CKV_AWS_111 write access without constraint: applies to the read-only
+  # CKV_AWS_356 inspection statement. ec2:DescribeInstances, iam:ListUserTags
+  #             and iam:ListAccessKeys do not support resource-level
+  #             permissions; AWS requires "*". The destructive actions in the
+  #             same policy ARE constrained, by ARN and by resource tag.
+  - CKV_AWS_111
+  - CKV_AWS_356
+
+  # --- Demo targets ---------------------------------------------------------
+  # These resources exist only to be contained and restored, behind
+  # deploy_demo_targets which defaults to false.
+  #
+  # CKV2_AWS_5  security group attached: the quarantine group is deliberately
+  #             unattached until an incident applies it.
+  # CKV_AWS_126 detailed monitoring: a throwaway instance destroyed same-day.
+  # CKV_AWS_135 EBS optimization: not supported meaningfully on t3.micro.
+  # CKV2_AWS_41 IAM role on instance: the demo target has no instance profile
+  #             on purpose — it needs no AWS permissions whatsoever.
+  - CKV2_AWS_5
+  - CKV_AWS_126
+  - CKV_AWS_135
+  - CKV2_AWS_41

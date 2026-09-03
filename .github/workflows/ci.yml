@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Read-only. This workflow never needs AWS credentials: fmt, validate and
+# Checkov all run against the configuration, not against a live account.
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform (${{ matrix.stack }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [detection, workload, guardrails]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to a major version tag, never @master. An unresolvable `uses:`
+      # ref fails the whole run at startup with "(Unnamed workflow)" and no
+      # job logs, which is a miserable thing to debug.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: Format check
+        run: terraform -chdir=${{ matrix.stack }} fmt -check -diff
+
+      # -backend=false skips backend initialisation, so no credentials are
+      # required. Providers are still downloaded, which validate needs.
+      - name: Init
+        run: terraform -chdir=${{ matrix.stack }} init -backend=false
+
+      - name: Validate
+        run: terraform -chdir=${{ matrix.stack }} validate
+
+  python:
+    name: Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linter
+        run: pip install --quiet ruff
+
+      # Catches the syntax errors. Does NOT catch the indentation defect that
+      # broke the MEDIUM path in this project — that was valid Python with the
+      # wrong meaning, and only verify.sh found it.
+      - name: Compile check
+        run: python -m compileall -q lambda scripts
+
+      - name: Lint
+        run: ruff check --select E,F --ignore E501 lambda scripts
+
+      - name: Shell syntax check
+        run: bash -n scripts/verify.sh
+
+  checkov:
+    name: Checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Installed via pip rather than a third-party action: one less
+      # external reference that can break the run before it starts.
+      - name: Install Checkov
+        run: pip install --quiet checkov
+
+      - name: Scan Terraform
+        run: checkov --directory . --framework terraform --config-file .checkov.yml --compact --quiet
