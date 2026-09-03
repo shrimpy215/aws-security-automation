@@ -333,13 +333,23 @@ def lambda_handler(event, context):
         try:
             if finding["severity_normalized"] < MIN_SEVERITY:
                 stats["below_threshold"] += 1
+                # Recorded in the audit trail even though no alert is sent.
+                # "We saw this and decided not to escalate" is a decision
+                # worth being able to prove later.
+                write_audit(
+                    finding,
+                    fingerprint(finding),
+                    "BELOW_THRESHOLD",
+                    "severity {} below threshold {}".format(
+                        finding["severity_normalized"], MIN_SEVERITY),
+                )
                 LOG.info(json.dumps({
                     "message": "below severity threshold",
                     "finding_id": finding["finding_id"],
                     "severity": finding["severity_normalized"],
                     "threshold": MIN_SEVERITY,
                 }))
-                continue
+            continue
 
             fp = fingerprint(finding)
 

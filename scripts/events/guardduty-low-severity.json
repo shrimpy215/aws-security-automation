@@ -1,0 +1,31 @@
+{
+  "version": "0",
+  "id": "test-event-0002",
+  "detail-type": "GuardDuty Finding",
+  "source": "aws.guardduty",
+  "account": "495759857853",
+  "time": "2026-09-03T13:00:00Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "schemaVersion": "2.0",
+    "accountId": "495759857853",
+    "region": "us-east-1",
+    "partition": "aws",
+    "id": "test-finding-low-0001",
+    "arn": "arn:aws:guardduty:us-east-1:495759857853:detector/test/finding/test-finding-low-0001",
+    "type": "Recon:EC2/PortProbeUnprotectedPort",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0aaaaaaaaaaaaaaaa",
+        "instanceType": "t3.micro"
+      }
+    },
+    "severity": 2,
+    "createdAt": "2026-09-03T13:00:00.000Z",
+    "updatedAt": "2026-09-03T13:00:00.000Z",
+    "title": "Unprotected port on i-0aaaaaaaaaaaaaaaa is being probed",
+    "description": "EC2 instance i-0aaaaaaaaaaaaaaaa has an unprotected port being probed by a known scanner."
+  }
+}
