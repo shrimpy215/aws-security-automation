@@ -82,3 +82,62 @@ variable "enable_securityhub_rule" {
   type        = bool
   default     = false
 }
+variable "deploy_demo_targets" {
+  description = <<-EOT
+    Whether to create throwaway resources for demonstrating containment:
+    one t3.micro EC2 instance and one IAM user, both tagged into scope.
+
+    These exist only to be isolated and re-enabled. They have no data, no
+    permissions, and no key pair. Destroyed with the rest of the stack.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "remediation_dry_run" {
+  description = <<-EOT
+    When true, the remediation function logs what it WOULD do and takes no
+    action. Defaults to true.
+
+    A missing or misspelled environment variable must result in no action
+    rather than unintended action.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "remediation_min_severity" {
+  description = "Minimum normalized severity (0-100) for automated containment. 70 = HIGH."
+  type        = number
+  default     = 70
+
+  validation {
+    condition     = var.remediation_min_severity >= 40
+    error_message = "Refusing a containment threshold below MEDIUM. Automated action on low-severity findings is how you take production down over a port scan."
+  }
+}
+
+variable "required_tag_key" {
+  description = "Tag key a resource must carry to be eligible for automated containment."
+  type        = string
+  default     = "SecurityAutomation"
+}
+
+variable "required_tag_value" {
+  description = "Tag value a resource must carry to be eligible for automated containment."
+  type        = string
+  default     = "enabled"
+}
+
+variable "protected_resources" {
+  description = <<-EOT
+    Resource IDs that must NEVER be acted on, regardless of tags or
+    severity. Checked first, before every other guardrail.
+
+    In a real deployment this is where domain controllers, bastions, and
+    anything whose isolation would cause an outage worse than the incident
+    would be listed.
+  EOT
+  type        = list(string)
+  default     = []
+}

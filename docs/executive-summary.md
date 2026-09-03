@@ -1,7 +1,7 @@
 # Executive Summary
 
 **Project:** Security Monitoring & Automated Incident Response
-**Status:** In progress — detection and alerting layers deployed
+**Status:** In progress — detection, alerting, triage, and containment operational
 **Last updated:** 2026-09-02
 
 ---
@@ -85,7 +85,7 @@ are mapped to the MITRE ATT&CK techniques they mitigate.
 - [x] Cost guardrails
 - [x] Detection layer — GuardDuty, Security Hub, AWS Config
 - [x] Alerting and persistence — encrypted notifications, both databases
-- [ ] Triage logic — severity filtering, enrichment, deduplication
-- [ ] Automated containment — network isolation, credential revocation
+- [x] Triage logic — severity filtering, enrichment, deduplication
+- [x] Automated containment — network isolation, credential revocation
 - [ ] Verification — simulated findings, response-time measurement
 - [ ] Incident response playbook and architecture documentation
