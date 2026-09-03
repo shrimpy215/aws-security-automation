@@ -1,0 +1,29 @@
+{
+  "version": "0",
+  "id": "test-contain-template",
+  "detail-type": "GuardDuty Finding",
+  "source": "aws.guardduty",
+  "account": "495759857853",
+  "time": "2026-09-03T14:00:00Z",
+  "region": "us-east-1",
+  "detail": {
+    "schemaVersion": "2.0",
+    "accountId": "495759857853",
+    "region": "us-east-1",
+    "partition": "aws",
+    "id": "test-contain-finding-template",
+    "type": "CryptoCurrency:EC2/BitcoinTool.B",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "INSTANCE_PLACEHOLDER",
+        "instanceType": "t3.micro"
+      }
+    },
+    "severity": 8,
+    "createdAt": "2026-09-03T14:00:00.000Z",
+    "updatedAt": "2026-09-03T14:00:00.000Z",
+    "title": "Simulated mining activity for containment verification",
+    "description": "Synthetic high-severity finding used by scripts/verify.sh."
+  }
+}

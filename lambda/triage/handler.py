@@ -333,9 +333,6 @@ def lambda_handler(event, context):
         try:
             if finding["severity_normalized"] < MIN_SEVERITY:
                 stats["below_threshold"] += 1
-                # Recorded in the audit trail even though no alert is sent.
-                # "We saw this and decided not to escalate" is a decision
-                # worth being able to prove later.
                 write_audit(
                     finding,
                     fingerprint(finding),
@@ -349,7 +346,7 @@ def lambda_handler(event, context):
                     "severity": finding["severity_normalized"],
                     "threshold": MIN_SEVERITY,
                 }))
-            continue
+                continue
 
             fp = fingerprint(finding)
 
@@ -376,7 +373,6 @@ def lambda_handler(event, context):
             }))
 
         except Exception as exc:
-            # One malformed finding must not discard the rest of the batch.
             stats["errors"] += 1
             LOG.error(json.dumps({
                 "message": "finding processing failed",
