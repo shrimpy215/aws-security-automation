@@ -67,3 +67,18 @@ variable "log_level" {
   type        = string
   default     = "INFO"
 }
+variable "enable_securityhub_rule" {
+  description = <<-EOT
+    Whether the Security Hub EventBridge rule is enabled.
+
+    Defaults to false. When Security Hub standards finish enabling they
+    import several hundred control findings at once. Each is a distinct
+    fingerprint, so deduplication does not suppress them, and every
+    HIGH/CRITICAL one would produce an email.
+
+    Turn this on deliberately during Stage 5 verification, once you are
+    watching for the results.
+  EOT
+  type        = bool
+  default     = false
+}
