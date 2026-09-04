@@ -134,3 +134,34 @@ from this code. Reporting a single blended figure would obscure that.
 
 4. Latency sample size is small - two to four findings per run. The figures
    above are indicative, not statistically robust.
+
+## Teardown verification
+
+`terraform destroy` reporting success is not proof. Verified independently by
+querying AWS after destroying the workload and detection stacks:
+
+| Resource | Result |
+|---|---|
+| GuardDuty detectors | none |
+| Security Hub | `InvalidAccessException` — account not subscribed |
+| Config recorders | none |
+| Lambda functions matching `secops*` | none |
+| DynamoDB tables matching `secops*` | none |
+| EC2 instances tagged `Project=secops` | none |
+| Budgets | `account-monthly-cost` still present, as intended |
+
+The budget is in its own state file specifically so no teardown can remove it.
+
+### One resource remains by design
+
+The customer-managed KMS key is **pending deletion**, not deleted. AWS does not
+permit immediate key deletion; `destroy` schedules it with a seven-day minimum
+waiting period, and the key bills, prorated, until then. The alias is removed
+immediately.
+
+    aws kms list-aliases --region us-east-1 \
+      --query "Aliases[?starts_with(AliasName, 'alias/secops')]"
+
+This is why the key lived in the detection stack rather than the workload stack:
+a key created and destroyed every session would have accumulated billable
+pending-deletion keys. See docs/decisions.md #1.
