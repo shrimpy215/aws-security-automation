@@ -66,6 +66,13 @@ resource "aws_lambda_function" "triage" {
     target_arn = aws_sqs_queue.triage_dlq.arn
   }
 
+  # Active tracing. For a project that reports latency figures, being able to
+  # see where the time actually goes is the point.
+  tracing_config {
+    mode = "Active"
+  }
+
+
   # The log group must exist before the function runs, and nothing in the
   # function config references it.
   depends_on = [aws_cloudwatch_log_group.triage]

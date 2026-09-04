@@ -132,6 +132,17 @@ data "aws_iam_policy_document" "remediation" {
     actions   = ["iam:UpdateAccessKey"]
     resources = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/${var.project_name}-*"]
   }
+
+  # X-Ray write APIs do not support resource-level permissions.
+  statement {
+    sid    = "WriteXRayTraces"
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "remediation" {
@@ -173,6 +184,13 @@ resource "aws_lambda_function" "remediation" {
   dead_letter_config {
     target_arn = aws_sqs_queue.remediation_dlq.arn
   }
+
+  # Active tracing. For a project that reports latency figures, being able to
+  # see where the time actually goes is the point.
+  tracing_config {
+    mode = "Active"
+  }
+
 
   depends_on = [aws_cloudwatch_log_group.remediation]
 }

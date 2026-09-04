@@ -9,6 +9,9 @@
 # This data is DESIGNED to expire. That is the mechanism, not a compromise.
 # ---------------------------------------------------------------------------
 
+# checkov:skip=CKV_AWS_28: Suppression state is designed to expire via TTL.
+# Point-in-time recovery on data we delete on purpose buys nothing. The
+# audit table, where recovery matters, has it enabled.
 resource "aws_dynamodb_table" "dedupe" {
   name = "${var.project_name}-finding-dedupe"
 

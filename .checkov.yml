@@ -67,3 +67,38 @@ skip-check:
   - CKV_AWS_126
   - CKV_AWS_135
   - CKV2_AWS_41
+
+  # --- KMS key policy -------------------------------------------------------
+  # CKV_AWS_109 permissions management without constraint: this is the AWS
+  #             standard root-delegation statement. Without it the key becomes
+  #             unmanageable by anyone, including the account owner, and is
+  #             unrecoverable. Access is then controlled by IAM policy, which is
+  #             the documented AWS pattern.
+  - CKV_AWS_109
+
+  # --- Static analysis limitations ------------------------------------------
+  # These four report missing configuration that IS present, but attached via a
+  # separate count-gated resource that Checkov cannot associate back to its
+  # parent. Verified manually against the deployed resources.
+  #
+  # CKV_AWS_21  versioning: set by aws_s3_bucket_versioning.config[0]
+  # CKV2_AWS_6  public access block: set by aws_s3_bucket_public_access_block
+  # CKV2_AWS_45 recorder scope: all_supported and include_global_resource_types
+  #             are both true
+  # CKV2_AWS_3  GuardDuty org coverage: expects organization-level config. This
+  #             is a single-account deployment (see docs/decisions.md #1).
+  - CKV_AWS_21
+  - CKV2_AWS_6
+  - CKV2_AWS_45
+  - CKV2_AWS_3
+
+  # --- S3 default encryption ------------------------------------------------
+  # CKV_AWS_145 SSE-KMS on the Config bucket: encrypted with SSE-S3 (AES-256).
+  #             Using the customer-managed key would require granting the AWS
+  #             Config service role kms:GenerateDataKey and adds a KMS request
+  #             per object written. The bucket holds resource configuration
+  #             metadata, not credentials, and is destroyed with the project.
+  #             The data that does warrant the CMK — finding detail — lives in
+  #             DynamoDB and SNS, both of which use it.
+  #             Reasonable future improvement, deliberately not done here.
+  - CKV_AWS_145

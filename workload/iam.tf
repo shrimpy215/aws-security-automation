@@ -79,6 +79,17 @@ data "aws_iam_policy_document" "triage" {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.triage_dlq.arn]
   }
+
+  # X-Ray write APIs do not support resource-level permissions.
+  statement {
+    sid    = "WriteXRayTraces"
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "triage" {
