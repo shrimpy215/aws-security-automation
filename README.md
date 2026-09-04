@@ -10,6 +10,11 @@ against NIST SP 800-61.
 **Project 3 of 6** in an AWS solutions architecture and cloud security
 portfolio.
 
+**Status:** complete. Built, verified against live GuardDuty findings, and
+destroyed. Teardown confirmed by querying AWS directly rather than trusting
+`terraform destroy` output — see [docs/verification.md](docs/verification.md).
+Redeploys from this repository in about three minutes.
+
 - [Architecture brief](docs/architecture.html) — visual walkthrough
 - [Executive summary](docs/executive-summary.md) — plain-English version
 - [Incident response playbook](docs/incident-response-playbook.md) — NIST 800-61
@@ -22,7 +27,7 @@ portfolio.
 A threat is detected, an alert lands in an inbox, and a human eventually reads
 it. That takes hours, works only during business hours, and stops working
 altogether once the volume of alerts exceeds the attention available — which is
-how most detection programmes quietly fail.
+how most detection programs quietly fail.
 
 This system performs the first several steps in seconds, around the clock, and
 keeps a permanent record of every decision it made.
@@ -102,6 +107,7 @@ the first minute and has no free tier, which is why it sits behind
 | Immutable audit trail | Append-only table, point-in-time recovery, no TTL, `PutItem` only. |
 | Dead letter queues | Both functions. A security pipeline that silently drops findings is worse than none. |
 | Reversible actions | Original security groups recorded before replacement; keys deactivated, not deleted. |
+| Distributed tracing | Active X-Ray tracing on both functions, with `xray:Put*` scoped to the execution roles. |
 
 ## Verification
 
@@ -148,9 +154,14 @@ one.
 
 ## What this demonstrates
 
-Projects 1 and 2 build secure infrastructure. This one operates it: what happens
-after a control fires, who finds out, how quickly, and what the system is
-permitted to do without asking.
+Projects 1 and 2 demonstrate building secure infrastructure. This one
+demonstrates operating it — what happens after a control fires, who finds out,
+how quickly, and what the system is permitted to do without asking.
+
+Each project in the portfolio is a standalone deployment. This one shares no
+resources with the earlier two; what carries forward is the conventions —
+lifecycle-split stacks, a decisions log, committed verification, and CI with
+justified exceptions rather than suppressed findings.
 
 The deduplication and audit design are the substance for a security operations
 audience. The IAM is the substance for an architecture audience — a function
