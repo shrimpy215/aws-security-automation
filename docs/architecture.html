@@ -1,0 +1,681 @@
+<title>Detection to Containment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface-2: #efede8;
+    --ink: #191b1e;
+    --ink-2: #4d5358;
+    --ink-3: #7b8288;
+    --rule: #e1ded7;
+    --rule-2: #cfcbc2;
+    --accent: #0c6b6b;
+    --accent-soft: #dceceb;
+
+    /* Severity is semantic, and separate from the series accent.
+       These are the ASFF labels the pipeline actually assigns. */
+    --sev-crit: #91302f;
+    --sev-crit-soft: #f6e2e1;
+    --sev-high: #a1521a;
+    --sev-high-soft: #f7e7d8;
+    --sev-med: #7c6413;
+    --sev-med-soft: #f4eed6;
+    --sev-low: #566068;
+    --sev-low-soft: #e8eaec;
+
+    --shadow: 0 1px 2px rgba(20,22,26,.05), 0 8px 24px -12px rgba(20,22,26,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519;
+      --surface: #1b1e23;
+      --surface-2: #23272d;
+      --ink: #e9e7e2;
+      --ink-2: #a9aeb4;
+      --ink-3: #767d85;
+      --rule: #2b3037;
+      --rule-2: #3a4048;
+      --accent: #58cfc3;
+      --accent-soft: #16302e;
+      --sev-crit: #e08986;
+      --sev-crit-soft: #341d1d;
+      --sev-high: #dda45c;
+      --sev-high-soft: #2f2417;
+      --sev-med: #cbb96a;
+      --sev-med-soft: #2b2718;
+      --sev-low: #9aa3ab;
+      --sev-low-soft: #24282d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519;
+    --surface: #1b1e23;
+    --surface-2: #23272d;
+    --ink: #e9e7e2;
+    --ink-2: #a9aeb4;
+    --ink-3: #767d85;
+    --rule: #2b3037;
+    --rule-2: #3a4048;
+    --accent: #58cfc3;
+    --accent-soft: #16302e;
+    --sev-crit: #e08986;
+    --sev-crit-soft: #341d1d;
+    --sev-high: #dda45c;
+    --sev-high-soft: #2f2417;
+    --sev-med: #cbb96a;
+    --sev-med-soft: #2b2718;
+    --sev-low: #9aa3ab;
+    --sev-low-soft: #24282d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  /* ---- header ---- */
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 28px; margin-bottom: 44px; }
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 400; font-size: clamp(34px, 5.4vw, 50px);
+    line-height: 1.1; letter-spacing: -.01em; margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .standfirst { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 26px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px 28px; font-size: 13px; color: var(--ink-3); }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---- verification badge ---- */
+  .grade-row { display: flex; align-items: center; gap: 18px; margin: 0 0 26px; }
+  .grade-badge {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 62px; height: 62px; border-radius: 10px;
+    background: var(--accent); color: #ffffff;
+    font-family: "Newsreader", Georgia, serif;
+    flex-shrink: 0; line-height: 1;
+  }
+  .grade-badge .n { font-size: 26px; }
+  .grade-badge .d {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: .1em; margin-top: 4px; opacity: .85;
+  }
+  .grade-label { font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+  .grade-label strong { color: var(--ink); font-weight: 600; display: block; }
+
+  /* ---- structure ---- */
+  section { margin: 0 0 60px; }
+  h2 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 400; font-size: 27px; letter-spacing: -.005em;
+    margin: 0 0 6px; line-height: 1.25; text-wrap: balance;
+  }
+  .kicker {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 8px;
+  }
+  h3 { font-size: 15px; font-weight: 600; letter-spacing: -.005em; margin: 30px 0 8px; }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  .lede { font-size: 17px; }
+  strong { font-weight: 600; }
+  code, .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .875em;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px; padding: .1em .35em;
+  }
+
+  /* ---- figures ---- */
+  figure {
+    margin: 30px 0 34px; padding: 22px 20px 16px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 10px; box-shadow: var(--shadow);
+  }
+  .figscroll { overflow-x: auto; }
+  figure svg { display: block; width: 100%; min-width: 660px; height: auto; }
+  figcaption {
+    margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--rule);
+    font-size: 13px; line-height: 1.55; color: var(--ink-3);
+  }
+  figcaption b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---- tables ---- */
+  .scroll { overflow-x: auto; margin: 22px 0 12px; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  th {
+    text-align: left; font-weight: 600; font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding: 0 16px 9px 0; border-bottom: 1px solid var(--rule-2); white-space: nowrap;
+  }
+  td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--ink-2); }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  .num { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---- severity chips ---- */
+  .sev {
+    display: inline-block;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 3px; font-weight: 500; white-space: nowrap;
+  }
+  .sev-crit { background: var(--sev-crit-soft); color: var(--sev-crit); }
+  .sev-high { background: var(--sev-high-soft); color: var(--sev-high); }
+  .sev-med  { background: var(--sev-med-soft);  color: var(--sev-med); }
+  .sev-low  { background: var(--sev-low-soft);  color: var(--sev-low); }
+
+  /* ---- callout ---- */
+  .note {
+    border-left: 2px solid var(--accent); background: var(--accent-soft);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 24px 0;
+  }
+  .note p { margin: 0; font-size: 15px; color: var(--ink-2); max-width: none; }
+  .note p + p { margin-top: 10px; }
+  .note .lbl {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 6px;
+  }
+
+  /* ---- guardrail cards ---- */
+  .rails { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 24px 0; }
+  .rail {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 16px 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .rail .rname {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px; color: var(--accent); font-weight: 500;
+  }
+  .rail .rdesc { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; margin: 0; }
+
+  /* ---- stack lifecycle ---- */
+  .stacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin: 24px 0; }
+  .stacks > div { background: var(--surface); padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .stacks .sname { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; color: var(--accent); }
+  .stacks .slife { font-family: "Newsreader", Georgia, serif; font-size: 21px; line-height: 1.15; color: var(--ink); }
+  .stacks .sbody { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+
+  /* ---- before / after ---- */
+  .ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 24px 0; }
+  .ba-card { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .ba-head {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 9px 16px; border-bottom: 1px solid var(--rule); color: var(--ink-3);
+    background: var(--surface-2);
+  }
+  .ba-body { padding: 14px 16px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; line-height: 1.7; color: var(--ink-2); overflow-x: auto; }
+  .ba-body .k { color: var(--ink); }
+  .ba-after .ba-head { color: var(--accent); }
+
+  /* ---- stages ---- */
+  ol.stages { list-style: none; padding: 0; margin: 24px 0 0; counter-reset: s; }
+  ol.stages li {
+    counter-increment: s; position: relative;
+    padding: 15px 0 15px 52px; border-bottom: 1px solid var(--rule);
+  }
+  ol.stages li:last-child { border-bottom: none; }
+  ol.stages li::before {
+    content: counter(s); position: absolute; left: 0; top: 15px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--rule-2); color: var(--ink-3);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.stages li.done::before { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .st-title { font-weight: 600; font-size: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+  .st-body { font-size: 14px; color: var(--ink-2); margin-top: 3px; }
+  .pill {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px; border: 1px solid var(--accent);
+    color: var(--accent); font-weight: 500;
+  }
+  .pill-open { border-color: var(--rule-2); color: var(--ink-3); }
+
+  /* ---- cost ---- */
+  .cost { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin: 24px 0; }
+  .cost div { background: var(--surface); padding: 18px 20px; }
+  .cost .v { font-family: "Newsreader", Georgia, serif; font-size: 30px; line-height: 1.1; color: var(--ink); }
+  .cost .k { font-size: 12.5px; color: var(--ink-3); margin-top: 5px; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; color: var(--ink-3); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">AWS Portfolio · Project 3</div>
+  <h1>Security Monitoring &amp; Automated Incident Response</h1>
+  <p class="standfirst">An event-driven pipeline that triages every GuardDuty and Security Hub finding, suppresses the repeats, records what it decided, and — behind four independent guardrails — takes a compromised resource off the network without waking anyone.</p>
+  <div class="grade-row">
+    <div class="grade-badge"><span class="n">18</span><span class="d">CHECKS</span></div>
+    <div class="grade-label">
+      <strong>18 assertions passing, 0 failing</strong>
+      One command re-runs every claim on this page: severity filtering, deduplication, guardrail refusals, and audit completeness.
+    </div>
+  </div>
+  <div class="meta">
+    <span><b>Repo</b> aws-security-automation</span>
+    <span><b>Region</b> us-east-1</span>
+    <span><b>Runtime</b> Python 3.12</span>
+    <span><b>IaC</b> Terraform</span>
+    <span><b>Cost</b> under $1 total</span>
+    <span><b>Status</b> complete &#183; destroyed</span>
+  </div>
+</header>
+
+<section>
+  <div class="kicker">The solution</div>
+  <h2>What you're actually building</h2>
+  <p class="lede">A finding arrives. Within seconds the system has decided whether it matters, whether it has seen it before, whether anyone needs to be told, and whether the affected resource should be taken off the network — and has written down each of those decisions.</p>
+  <p>The hard part is not the wiring. It is deciding what <em>not</em> to do: which findings to ignore, which repeats to swallow, and which resources are never safe to touch automatically. Most of the code below exists to enforce those refusals.</p>
+
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 880 330" role="img" aria-label="Findings from GuardDuty and Security Hub reach EventBridge, which routes all findings to a triage Lambda and only findings at severity 7.0 or above to a remediation Lambda. Triage writes to a deduplication table and an audit table and publishes to SNS. Remediation applies a quarantine security group or deactivates IAM access keys, and also writes to the audit table.">
+      <defs>
+        <marker id="p3ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+        <marker id="p3arq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/>
+        </marker>
+      </defs>
+
+      <!-- sources -->
+      <text x="12" y="30" font-size="10" font-family="JetBrains Mono, monospace" letter-spacing="1.2" fill="var(--ink-3)">DETECTION</text>
+
+      <rect x="12" y="46" width="146" height="52" rx="8" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.4"/>
+      <text x="85" y="70" font-size="12.5" text-anchor="middle" fill="var(--ink)">GuardDuty</text>
+      <text x="85" y="87" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">all findings</text>
+
+      <rect x="12" y="112" width="146" height="52" rx="8" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.4"/>
+      <text x="85" y="136" font-size="12.5" text-anchor="middle" fill="var(--ink)">Security Hub</text>
+      <text x="85" y="153" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">CIS v3.0.0 · FSBP</text>
+
+      <rect x="12" y="178" width="146" height="42" rx="8" fill="var(--surface)" stroke="var(--rule)" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="85" y="204" font-size="10.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">AWS Config</text>
+
+      <!-- eventbridge -->
+      <rect x="216" y="46" width="164" height="118" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="298" y="70" font-size="10" font-family="JetBrains Mono, monospace" letter-spacing="1.2" text-anchor="middle" fill="var(--accent)">EVENTBRIDGE</text>
+      <rect x="230" y="80" width="136" height="32" rx="5" fill="var(--surface)" stroke="var(--rule-2)"/>
+      <text x="298" y="100" font-size="10.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-2)">rule: all findings</text>
+      <rect x="230" y="118" width="136" height="32" rx="5" fill="var(--surface)" stroke="var(--rule-2)"/>
+      <text x="298" y="138" font-size="10.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-2)">rule: severity &#8805; 7.0</text>
+
+      <!-- lambdas -->
+      <rect x="438" y="34" width="152" height="56" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="514" y="58" font-size="12.5" text-anchor="middle" fill="var(--ink)">Triage</text>
+      <text x="514" y="75" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">filter · dedupe · alert</text>
+
+      <rect x="438" y="152" width="152" height="56" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="514" y="176" font-size="12.5" text-anchor="middle" fill="var(--ink)">Remediation</text>
+      <text x="514" y="193" font-size="9.5" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">4 guardrails · dry run</text>
+
+      <!-- outputs -->
+      <text x="660" y="30" font-size="10" font-family="JetBrains Mono, monospace" letter-spacing="1.2" fill="var(--ink-3)">OUTPUT</text>
+
+      <rect x="660" y="40" width="200" height="40" rx="7" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.2"/>
+      <text x="760" y="65" font-size="11.5" text-anchor="middle" fill="var(--ink)">SNS &#183; email alert</text>
+
+      <rect x="660" y="88" width="200" height="40" rx="7" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.2"/>
+      <text x="760" y="106" font-size="11.5" text-anchor="middle" fill="var(--ink)">DynamoDB &#183; dedupe</text>
+      <text x="760" y="120" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">TTL 24h</text>
+
+      <rect x="660" y="136" width="200" height="40" rx="7" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.2"/>
+      <text x="760" y="154" font-size="11.5" text-anchor="middle" fill="var(--ink)">DynamoDB &#183; audit</text>
+      <text x="760" y="168" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">no expiry</text>
+
+      <rect x="660" y="196" width="200" height="56" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="760" y="218" font-size="11.5" text-anchor="middle" fill="var(--ink)">Containment</text>
+      <text x="760" y="235" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">quarantine SG &#183; key disable</text>
+
+      <!-- arrows: sources to eventbridge -->
+      <path d="M158 72 L208 88" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+      <path d="M158 138 L208 124" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+      <path d="M158 199 L200 199 L200 150" fill="none" stroke="var(--ink-3)" stroke-width="1.1" stroke-dasharray="4 3"/>
+      <text x="86" y="238" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">evidence for controls</text>
+
+      <!-- eventbridge to lambdas -->
+      <path d="M380 96 L430 68" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+      <path d="M380 134 L430 176" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+
+      <!-- triage to outputs -->
+      <path d="M590 55 L652 60" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+      <path d="M590 66 L652 106" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+      <path d="M590 78 L652 152" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+
+      <!-- remediation to outputs -->
+      <path d="M590 186 L652 162" fill="none" stroke="var(--ink-3)" stroke-width="1.4" marker-end="url(#p3arq)"/>
+      <path d="M590 196 L652 218" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3ar)"/>
+
+      <!-- footnote band -->
+      <line x1="12" y1="278" x2="860" y2="278" stroke="var(--rule)" stroke-width="1"/>
+      <text x="12" y="300" font-size="10" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">Two functions, two IAM roles. Only the lower one holds ec2:ModifyInstanceAttribute and iam:UpdateAccessKey.</text>
+      <text x="12" y="318" font-size="10" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">A parsing bug in triage cannot reach a destructive API call.</text>
+    </svg>
+    </div>
+    <figcaption><b>Severity is filtered in two different places, on purpose.</b> The triage rule forwards <em>everything</em>, because a finding rejected as too low is evidence the system is working and belongs in the audit trail. The remediation rule filters at the router, because the fewer times a function holding destructive permissions is invoked, the better.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="kicker">Structure</div>
+  <h2>Three stacks, split by lifetime</h2>
+  <p>The usual instinct is to group infrastructure by service. This is grouped by <strong>how long each piece should live</strong> — which turned out to be the decision that made the project cheap to run and fast to iterate on.</p>
+
+  <div class="stacks">
+    <div>
+      <div class="sname">guardrails/</div>
+      <div class="slife">Permanent</div>
+      <div class="sbody">Account budget with forecast alerting. Never destroyed. A cost control that can be torn down alongside the thing it guards is not a control.</div>
+    </div>
+    <div>
+      <div class="sname">detection/</div>
+      <div class="slife">Project duration</div>
+      <div class="sbody">GuardDuty, Security Hub, Config, the KMS key, the SNS topic. Slow to enable — standards take hours, an email subscription needs a human to click a link.</div>
+    </div>
+    <div>
+      <div class="sname">workload/</div>
+      <div class="slife">Per session</div>
+      <div class="sbody">Lambda, DynamoDB, EventBridge, IAM. Destroyed at the end of every working session, back in about thirty seconds.</div>
+    </div>
+  </div>
+
+  <p>The workload stack reads nothing from the detection stack's state file — it finds the key and topic by name through data sources. The two are genuinely independent, which is why one can be destroyed nightly while the other stays up.</p>
+
+  <div class="note">
+    <span class="lbl">Why it matters</span>
+    <p>A KMS key cannot be deleted on demand; <code>destroy</code> only schedules deletion, minimum seven days, and it bills the whole time. An SNS email subscription silently discards messages until someone clicks a confirmation link. Both would have been re-created every session. Neither belongs in a stack you tear down twice a day.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Triage</div>
+  <h2>Four outcomes, all of them recorded</h2>
+  <p>Every finding that enters the system leaves a record of what was decided about it — including the ones deliberately ignored. That last part was a late change, and the right one: <em>"we saw this and chose not to escalate"</em> is exactly the decision an investigator or an auditor would want proof of.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Outcome</th><th>When</th><th>Alert sent</th><th>Audit row</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="sev sev-low">BELOW_THRESHOLD</span></td>
+          <td>Normalized severity under 40</td>
+          <td>No</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><span class="sev sev-med">SUPPRESSED_DUPLICATE</span></td>
+          <td>Fingerprint already claimed inside the 24-hour window</td>
+          <td>No</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><span class="sev sev-high">TRIAGED</span></td>
+          <td>New finding at MEDIUM or above</td>
+          <td>Yes</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><span class="sev sev-crit">CONTAINED</span></td>
+          <td>HIGH or above, on a tagged resource, all guardrails cleared</td>
+          <td>Yes</td>
+          <td>Yes, with rollback data</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Deduplication is on meaning, not identity</h3>
+  <p>The fingerprint is a hash of <em>finding type plus affected resource</em> — not the finding ID. Two separate findings describing the same problem on the same instance collapse into one alert; the finding ID would have kept them apart.</p>
+  <p>The claim is a DynamoDB conditional write, not a read followed by a write. Two Lambda containers processing the same finding simultaneously would both see "not present" and both send an alert. The conditional write makes the check and the write one atomic operation, so exactly one wins.</p>
+
+  <div class="note">
+    <span class="lbl">Two tables, not one</span>
+    <p>Suppression state is <em>supposed</em> to expire — that is the mechanism, and TTL reopens the window so activity that resumes is treated as new rather than silently swallowed. An audit record must never expire. Two requirements in direct opposition, so they get two tables: one with TTL and no point-in-time recovery, one with recovery and no TTL.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Containment</div>
+  <h2>Four guardrails, and one of them enforced twice</h2>
+  <p>The remediation function holds <code>ec2:ModifyInstanceAttribute</code> and <code>iam:UpdateAccessKey</code>. Everything below exists to make that safe.</p>
+
+  <div class="rails">
+    <div class="rail">
+      <div class="rname">1 · protected allow-list</div>
+      <p class="rdesc">Named resources are never touched, whatever the finding says. Checked first, so a protected resource is refused even when every other condition would permit action.</p>
+    </div>
+    <div class="rail">
+      <div class="rname">2 · severity threshold</div>
+      <p class="rdesc">Normalized 70 and above only. Terraform refuses to deploy a threshold below MEDIUM — a validation rule guarding the guardrail.</p>
+    </div>
+    <div class="rail">
+      <div class="rname">3 · required tag</div>
+      <p class="rdesc">The resource must carry <code>SecurityAutomation=enabled</code>. Enforced in Python, and again by an IAM resource-tag condition that AWS evaluates independently.</p>
+    </div>
+    <div class="rail">
+      <div class="rname">4 · dry run</div>
+      <p class="rdesc">Defaults to <strong>on</strong>. A missing or misspelled environment variable results in no action rather than unintended action.</p>
+    </div>
+  </div>
+
+  <figure>
+    <div class="figscroll">
+    <svg viewBox="0 0 880 210" role="img" aria-label="A finding passes left to right through four gates: protected allow-list, severity threshold, required tag, and dry run. Failing any gate diverts it to a refusal path that is logged, alerted and written to the audit trail. Clearing all four results in containment.">
+      <defs>
+        <marker id="p3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+        <marker id="p3gr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--sev-high)"/>
+        </marker>
+      </defs>
+
+      <rect x="8" y="36" width="86" height="46" rx="7" fill="var(--surface-2)" stroke="var(--rule-2)" stroke-width="1.3"/>
+      <text x="51" y="56" font-size="11" text-anchor="middle" fill="var(--ink)">Finding</text>
+      <text x="51" y="71" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">HIGH+</text>
+
+      <rect x="128" y="30" width="140" height="58" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="198" y="52" font-size="11" text-anchor="middle" fill="var(--ink)">Allow-list</text>
+      <text x="198" y="69" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">is it protected?</text>
+
+      <rect x="298" y="30" width="140" height="58" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="368" y="52" font-size="11" text-anchor="middle" fill="var(--ink)">Severity</text>
+      <text x="368" y="69" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">&#8805; 70 normalized</text>
+
+      <rect x="468" y="30" width="140" height="58" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="538" y="52" font-size="11" text-anchor="middle" fill="var(--ink)">Tag</text>
+      <text x="538" y="69" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">code + IAM policy</text>
+
+      <rect x="638" y="30" width="140" height="58" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="708" y="52" font-size="11" text-anchor="middle" fill="var(--ink)">Dry run</text>
+      <text x="708" y="69" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">default: on</text>
+
+      <rect x="806" y="36" width="66" height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="839" y="57" font-size="10" text-anchor="middle" fill="var(--accent)">Con-</text>
+      <text x="839" y="70" font-size="10" text-anchor="middle" fill="var(--accent)">tained</text>
+
+      <!-- through-line -->
+      <line x1="96" y1="59" x2="122" y2="59" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3g)"/>
+      <line x1="270" y1="59" x2="292" y2="59" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3g)"/>
+      <line x1="440" y1="59" x2="462" y2="59" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3g)"/>
+      <line x1="610" y1="59" x2="632" y2="59" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3g)"/>
+      <line x1="780" y1="59" x2="800" y2="59" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#p3g)"/>
+
+      <!-- refusal drops -->
+      <line x1="198" y1="90" x2="198" y2="128" stroke="var(--sev-high)" stroke-width="1.3" marker-end="url(#p3gr)"/>
+      <line x1="368" y1="90" x2="368" y2="128" stroke="var(--sev-high)" stroke-width="1.3" marker-end="url(#p3gr)"/>
+      <line x1="538" y1="90" x2="538" y2="128" stroke="var(--sev-high)" stroke-width="1.3" marker-end="url(#p3gr)"/>
+      <line x1="708" y1="90" x2="708" y2="128" stroke="var(--sev-high)" stroke-width="1.3" marker-end="url(#p3gr)"/>
+
+      <rect x="128" y="134" width="650" height="42" rx="7" fill="var(--sev-high-soft)" stroke="var(--sev-high)" stroke-width="1.2"/>
+      <text x="453" y="152" font-size="11" text-anchor="middle" fill="var(--sev-high)">REMEDIATION_REFUSED &#183; reason recorded</text>
+      <text x="453" y="168" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace" fill="var(--sev-high)">written to the audit trail, alerted to a human, no action taken</text>
+
+      <text x="8" y="199" font-size="9.5" font-family="JetBrains Mono, monospace" fill="var(--ink-3)">A refusal is an outcome, not an error. Every one of them names which gate stopped it.</text>
+    </svg>
+    </div>
+    <figcaption><b>Guardrail 3 is enforced in two independent places.</b> The Python checks the tag, and the IAM policy attaches an <code>aws:ResourceTag</code> condition to <code>ec2:ModifyInstanceAttribute</code>. Code can have bugs; the IAM policy is the backstop that survives them. The quarantine security group is granted separately by exact ARN, so no other group can ever be applied.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="kicker">Evidence</div>
+  <h2>Containment, demonstrated live</h2>
+  <p>Run against a tagged throwaway instance with dry run disabled. The instance is not stopped — only its network reachability is removed, so volatile forensic state survives for whoever investigates.</p>
+
+  <div class="ba">
+    <div class="ba-card">
+      <div class="ba-head">Before</div>
+      <div class="ba-body">
+        <span class="k">sg-01a4088adb87e7cdb</span><br>
+        secops-demo-target<br>
+        <span style="opacity:.7">egress: 0.0.0.0/0</span>
+      </div>
+    </div>
+    <div class="ba-card ba-after">
+      <div class="ba-head">After</div>
+      <div class="ba-body">
+        <span class="k">sg-069ca8449127026db</span><br>
+        secops-quarantine<br>
+        <span style="opacity:.7">ingress: none · egress: none</span>
+      </div>
+    </div>
+  </div>
+
+  <p>The audit row carries the information needed to undo it:</p>
+
+  <div class="ba-card" style="margin-bottom:22px">
+    <div class="ba-head">Audit record</div>
+    <div class="ba-body">{"performed": true,<br>&nbsp;"detail": "security groups replaced with quarantine group",<br>&nbsp;"original_security_groups": ["sg-01a4088adb87e7cdb"]}</div>
+  </div>
+
+  <p>Credential revocation follows the same principle: keys are set to <code>Inactive</code>, never deleted. Reversible if the finding turns out to be a false positive, and still available for working out what the key was used for.</p>
+</section>
+
+<section>
+  <div class="kicker">Measurement</div>
+  <h2>Response time, reported honestly</h2>
+  <p>Measured from live GuardDuty findings, whose timestamps AWS sets. Synthetic test fixtures are excluded from the calculation — their <code>createdAt</code> values are hardcoded, so any interval measured from them is fiction rather than latency.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Stage</th><th>Duration</th><th>Controlled by</th></tr></thead>
+      <tbody>
+        <tr><td>GuardDuty publish + EventBridge delivery</td><td class="num">1.2 – 4.8 min</td><td>AWS</td></tr>
+        <tr><td>Lambda cold start (init)</td><td class="num">~415 ms</td><td>AWS</td></tr>
+        <tr><td>Triage execution, cold</td><td class="num">~280 ms</td><td>This code</td></tr>
+        <tr><td>Triage execution, warm</td><td class="num">~38 ms</td><td>This code</td></tr>
+        <tr><td>Containment, once invoked</td><td class="num">&lt; 1 s</td><td>This code</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Median detection-to-decision was <strong>3.0 minutes</strong>, range 1.2 to 4.8. Nearly all of that is AWS-side publishing delay. Reporting one blended figure would hide the fact that <strong>this pipeline's own contribution is under a third of a second</strong> — and that any real improvement would have to come from the detection source, not from this code.</p>
+
+  <div class="note">
+    <span class="lbl">What this is not</span>
+    <p>MTTD in the NIST SP 800-61 sense is the interval between compromise and detection. That is not measurable here: sample findings describe events that never happened, so there is no compromise time to measure from. Calling this MTTD would be the easy claim and the wrong one.</p>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Build sequence</div>
+  <h2>Seven stages</h2>
+  <ol class="stages">
+    <li class="done">
+      <div class="st-title">Repository and cost guardrail <span class="pill">complete</span></div>
+      <div class="st-body">Directory structure, gitignore, and an account budget with alerts at 50% actual, 100% actual, and 100% <em>forecast</em> — deployed before anything billable existed, in its own state file so no teardown can remove it.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Detection foundation <span class="pill">complete</span></div>
+      <div class="st-body">GuardDuty with optional paid data sources explicitly disabled, Security Hub with CIS v3.0.0 and AWS Foundational Security Best Practices, and an AWS Config recorder so the benchmark controls have configuration items to evaluate.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Persistence and alerting <span class="pill">complete</span></div>
+      <div class="st-body">Customer-managed KMS key with rotation, an encrypted SNS topic with a confirmed subscription, and the two DynamoDB tables with their deliberately opposed retention policies.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Triage function and event routing <span class="pill">complete</span></div>
+      <div class="st-body">Python handler normalizing two incompatible finding formats into one internal shape, severity filtering, race-safe deduplication, audit writes, SNS alerting. EventBridge rules with scoped invoke permissions and a dead letter queue.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Guardrailed containment <span class="pill">complete</span></div>
+      <div class="st-body">Second function, second IAM role, four guardrails, tag-scoped IAM conditions, reversible actions with rollback data recorded. Demonstrated live against a throwaway target and restored afterwards.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Verification and measurement <span class="pill">complete</span></div>
+      <div class="st-body">An 18-assertion harness that exits non-zero, and a Python tool computing latency from the audit trail. The harness immediately found a live defect: an indentation error had made the MEDIUM path unreachable, and manual testing had missed it.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Playbook, README, and CI <span class="pill">complete</span></div>
+      <div class="st-body">Incident response playbook mapped to NIST SP 800-61, twenty-two design decisions, a troubleshooting log, and CI running format, validate, Checkov and Python lint on every push. Checkov's one fair finding &#8212; missing X-Ray tracing &#8212; was fixed rather than skipped; the rest are documented exceptions that argue their case.</div>
+    </li>
+    <li class="done">
+      <div class="st-title">Teardown and publication <span class="pill">complete</span></div>
+      <div class="st-body">Both stacks destroyed, and the teardown verified by querying AWS directly rather than trusting the destroy output. Only the permanent budget guardrail and a pending-deletion KMS key remain, both by design. Pushed with CI green.</div>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <div class="kicker">Economics</div>
+  <h2>What it costs to run</h2>
+  <div class="cost">
+    <div><div class="v">$0.00</div><div class="k">GuardDuty and Security Hub, 30-day trial</div></div>
+    <div><div class="v">~$0.30</div><div class="k">AWS Config, the only service billing from minute one</div></div>
+    <div><div class="v">&lt; $1</div><div class="k">realistic total across the build</div></div>
+  </div>
+  <p>Lambda, DynamoDB on-demand, SNS and EventBridge are all effectively free at this volume. AWS Config is the exception — it has no free tier and bills per configuration item — which is why it sits behind a variable that can turn it off, and why the tradeoff is documented rather than absorbed silently.</p>
+  <p>The workload stack is destroyed at the end of every session and rebuilt in about thirty seconds, so nothing accumulates between working days.</p>
+</section>
+
+<section>
+  <div class="kicker">Positioning</div>
+  <h2>What this proves</h2>
+  <p>Projects 1 and 2 demonstrate <em>building</em> secure infrastructure. This one demonstrates <em>operating</em> it: what happens after a control fires, who finds out, how fast, and what the system is permitted to do on its own.</p>
+  <p>Each project in the portfolio is a standalone deployment &#8212; this one shares no resources with the earlier two, which were destroyed before it began. What carries forward is the conventions: stacks split by lifetime, a decisions log written as the work happens, verification committed rather than described, and CI exceptions that argue their case instead of suppressing findings.</p>
+  <p>For a security operations screen, the deduplication and audit design are the substance — alert fatigue is the reason most detection programmes quietly stop working, and TTL-scoped suppression with a permanent audit trail is a real answer to it. For a cloud security architecture screen, the interesting part is the IAM: a function holding genuinely destructive permissions, constrained by a resource-tag condition that AWS evaluates independently of the code.</p>
+
+  <div class="note">
+    <span class="lbl">The paragraph that matters</span>
+    <p>"The tag guardrail is enforced twice — once in Python, once by an IAM condition — because code can have bugs and the IAM policy is the backstop that survives them."</p>
+    <p>Being able to say that, and then explain the three-line policy condition that makes it true, is the difference between having built automated remediation and being trusted to point it at production.</p>
+  </div>
+</section>
+
+<footer>
+  AWS Solutions Architect portfolio · Project 3 of 6 · Terraform · Python 3.12 · us-east-1 · September 2026.
+</footer>
+
+</div>
