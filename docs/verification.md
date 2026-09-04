@@ -4,7 +4,8 @@ Evidence that this system does what the README claims. Every result below is
 reproducible from a clean deploy with the commands given.
 
 **Last run:** 2026-09-03
-**Region:** us-east-1
+**Region:** us-east-1  
+**State:** decommissioned — results below were captured while deployed
 
 ## Reproducing
 
