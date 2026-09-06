@@ -36,9 +36,18 @@ torn everything down.
 items. Without a recorder the standards enable but the compliance score is
 meaningless.
 
-**Cost.** Config has no free tier and bills per configuration item — roughly
-thirty cents across this project. Made a variable so the tradeoff is visible
-and reversible rather than absorbed silently.
+**Cost.** Config has no free tier and bills per configuration item.
+
+Estimated at roughly thirty cents. **Actual: $2.23**, which was 76% of the
+project's entire AWS spend. Recording all supported resource types including
+global, across several apply and destroy cycles, generates far more
+configuration items than the estimate assumed — every resource created and
+destroyed is itself a recorded change.
+
+Corrected here rather than left as the original guess. Made a variable so the
+tradeoff is visible and reversible; on a longer-running project, narrowing
+`recording_group` to the resource types the enabled controls actually evaluate
+would be the obvious optimisation.
 
 ### 4. SSM Incident Manager excluded from scope
 
